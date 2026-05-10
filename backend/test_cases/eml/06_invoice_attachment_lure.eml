@@ -1,0 +1,24 @@
+MIME-Version: 1.0
+Date: Wed, 06 May 2026 11:31:00 +0530
+Message-ID: <invoice-7741@supplier.example>
+Subject: Overdue invoice attached for immediate review
+From: Supplier Billing <billing@supplier.example>
+To: Accounts Payable <ap@company.example>
+Content-Type: multipart/mixed; boundary="invoice-boundary"
+
+--invoice-boundary
+Content-Type: text/plain; charset="utf-8"
+
+Hello,
+
+The attached invoice is overdue. Please review the document and arrange payment today to avoid account hold.
+
+Regards,
+Supplier Billing
+
+--invoice-boundary
+Content-Type: application/pdf; name="Invoice_7741.pdf"
+Content-Disposition: attachment; filename="Invoice_7741.pdf"
+
+Synthetic placeholder attachment content.
+--invoice-boundary--

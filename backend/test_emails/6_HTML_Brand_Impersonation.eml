@@ -1,0 +1,16 @@
+MIME-Version: 1.0
+Date: Sat, 09 May 2026 09:25:00 +0530
+Message-ID: <m365-alert@secure-message-center.example.net>
+Subject: Microsoft 365 account access suspended
+From: Microsoft 365 Security <m365-alert@secure-message-center.example.net>
+To: Employee <employee@company.example>
+Content-Type: text/html; charset="utf-8"
+
+<html>
+  <body>
+    <p>We blocked a suspicious login attempt to your Microsoft 365 account.</p>
+    <p>Please verify your password immediately to restore account access.</p>
+    <p><a href="http://microsoft-365-authentication.example.net/login">Review blocked sign-in</a></p>
+    <p>Failure to verify within 24 hours may suspend access.</p>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+MIME-Version: 1.0
+Date: Fri, 08 May 2026 16:10:00 +0530
+Message-ID: <payroll-review@hr.company.example>
+Subject: Payroll bank confirmation required today
+From: Payroll Desk <payroll@hr.company.example>
+Reply-To: Payroll Review <review-payroll@external-helpdesk.example.net>
+Return-Path: <bounce@external-helpdesk.example.net>
+To: Employee <employee@company.example>
+Content-Type: text/plain; charset="utf-8"
+
+Hello,
+
+We are closing monthly payroll records today. Please reply immediately with your employee ID and confirm your bank account details so salary processing is not delayed.
+
+Regards,
+Payroll Desk

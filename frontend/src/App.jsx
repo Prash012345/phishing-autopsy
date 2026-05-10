@@ -1,6 +1,62 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import axios from 'axios'
 import './App.css'
+
+const API_URL = 'http://127.0.0.1:5000/api/analyze'
+
+function normalizeAnalysisResponse(data) {
+  const ai = data.ai_analysis ?? data.ai ?? {}
+  const score = data.score_breakdown ?? {
+    model_probability: ai.threat_score ?? 0,
+    heuristic_points: 0,
+    final_score: ai.threat_score ?? 0,
+    verdict: ai.is_phishing ? 'high_risk' : 'low_risk',
+  }
+  const linkAnalysis = data.link_analysis ?? {
+    links: ai.links ?? [],
+    details: [],
+    unique_domains: [],
+    total_links: ai.links?.length ?? 0,
+    suspicious_count: ai.suspicious_links?.length ?? 0,
+    suspicious_links: ai.suspicious_links ?? [],
+  }
+
+  return {
+    ...data,
+    ai,
+    score_breakdown: score,
+    link_analysis: linkAnalysis,
+    risk_factors: data.risk_factors ?? [],
+    language_analysis: data.language_analysis ?? {
+      word_count: 0,
+      keyword_hit_count: 0,
+      keyword_hits: {},
+    },
+    header_analysis: data.header_analysis ?? {},
+  }
+}
+
+function StatusPill({ label, good }) {
+  return (
+    <span className={`status-pill ${good ? 'pass' : 'fail'}`}>
+      <span className="status-dot" />
+      {label}
+    </span>
+  )
+}
+
+function Metric({ label, value, tone = 'neutral' }) {
+  return (
+    <div className={`metric ${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+function EmptyState({ text }) {
+  return <p className="empty-state">{text}</p>
+}
 
 function App() {
   const [emailText, setEmailText] = useState('')
@@ -8,6 +64,13 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [file, setFile] = useState(null)
+
+  const scoreTone = useMemo(() => {
+    const finalScore = results?.score_breakdown?.final_score ?? results?.ai?.threat_score ?? 0
+    if (finalScore >= 75) return 'critical'
+    if (finalScore >= 51) return 'warning'
+    return 'calm'
+  }, [results])
 
   const handleAnalyze = async (e) => {
     e.preventDefault()
@@ -24,13 +87,8 @@ function App() {
         formData.append('sender_domain', senderDomain)
       }
 
-      const response = await axios.post('http://127.0.0.1:5000/api/analyze', formData)
-
-      setResults({
-        dns: response.data.dns_analysis,
-        domain: response.data.extracted_domain || senderDomain,
-        ai: response.data.ai_analysis
-      })
+      const response = await axios.post(API_URL, formData)
+      setResults(normalizeAnalysisResponse(response.data))
     } catch (error) {
       console.error('Error:', error)
       alert('Failed to analyze. Check backend.')
@@ -39,92 +97,212 @@ function App() {
     }
   }
 
+  const dns = results?.dns_analysis
+  const score = results?.score_breakdown
+  const header = results?.header_analysis
+  const links = results?.link_analysis
+  const language = results?.language_analysis
+  const riskFactors = results?.risk_factors ?? []
+
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Phishing Autopsy Sandbox</h1>
-      <p>Paste a suspicious email below to analyze its threat level.</p>
-      <p>Upload a raw <b>.eml</b> file, or paste text below.</p>
-
-      <form onSubmit={handleAnalyze} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ padding: '20px', border: '2px dashed #666', borderRadius: '8px', textAlign: 'center', backgroundColor: '#222' }}>
-          <label style={{ cursor: 'pointer', color: '#4da6ff', fontWeight: 'bold' }}>
-            Click here to upload a .eml file
-            <input
-              type="file"
-              accept=".eml"
-              onChange={(e) => setFile(e.target.files[0])}
-              style={{ display: 'none' }}
-            />
-          </label>
-          {file && <p style={{ color: '#4caf50', marginTop: '10px' }}>Selected: {file.name}</p>}
-        </div>
-
-        <div style={{ textAlign: 'center' }}><strong>OR MANUAL ENTRY</strong></div>
-
-        <div>
-          <label>Claimed Sender Domain:</label><br />
-          <input type="text" value={senderDomain} onChange={(e) => setSenderDomain(e.target.value)} disabled={!!file} placeholder="e.g., hdfcbank.com" style={{ width: '100%', padding: '10px' }} />
-        </div>
-
-        <div>
-          <label>Raw Email Text:</label><br />
-          <textarea value={emailText} onChange={(e) => setEmailText(e.target.value)} disabled={!!file} rows="5" placeholder="Paste email body..." style={{ width: '100%', padding: '10px' }} />
-        </div>
-
-        <button type="submit" disabled={loading} style={{ padding: '12px', backgroundColor: '#0056b3', color: 'white', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}>
-          {loading ? 'Analyzing...' : 'Analyze Email'}
-        </button>
-      </form>
-
-      {results && (
-        <div style={{ marginTop: '30px', padding: '20px', border: '2px solid #ddd', borderRadius: '8px' }}>
-          <h2>Analysis Results</h2>
-
-          <div style={{
-            padding: '15px',
-            backgroundColor: results.ai.is_phishing ? '#ffebee' : '#e8f5e9',
-            color: results.ai.is_phishing ? '#c62828' : '#2e7d32',
-            borderRadius: '5px',
-            marginBottom: '20px'
-          }}>
-            <h3 style={{ margin: 0 }}>Threat Score: {results.ai.threat_score}/100</h3>
-            <p><strong>Verdict:</strong> {results.ai.is_phishing ? 'HIGH RISK - PHISHING DETECTED' : 'SAFE - NO THREAT DETECTED'}</p>
-            <p><strong>AI Explanation:</strong> {results.ai.explanation}</p>
+    <main className="app-shell">
+      <section className="workspace">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Local email threat analysis</p>
+            <h1>Phishing Autopsy</h1>
           </div>
+          {results && (
+            <div className={`score-ring ${scoreTone}`}>
+              <span>{score?.final_score ?? results.ai?.threat_score ?? 0}</span>
+              <small>/100</small>
+            </div>
+          )}
+        </header>
 
-          {results.ai.suspicious_links.length > 0 && (
-            <div>
-              <h3>Suspicious Links Found:</h3>
-              <ul>
-                {results.ai.suspicious_links.map((link, index) => (
-                  <li key={index} style={{ color: 'red', wordBreak: 'break-all' }}>
-                    {link.url}
-                    {link.reasons?.length > 0 && (
-                      <span style={{ color: '#6b0000' }}> ({link.reasons.join(', ')})</span>
+        <section className="analysis-grid">
+          <form className="input-panel" onSubmit={handleAnalyze}>
+            <div className="panel-heading">
+              <h2>Evidence Input</h2>
+              <span>{file ? 'EML mode' : 'Manual mode'}</span>
+            </div>
+
+            <label className="drop-zone">
+              <span className="drop-title">Upload raw .eml</span>
+              <span className="drop-subtitle">{file ? file.name : 'No file selected'}</span>
+              <input
+                type="file"
+                accept=".eml"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+            </label>
+
+            <div className="divider">or</div>
+
+            <label className="field">
+              <span>Claimed sender domain</span>
+              <input
+                type="text"
+                value={senderDomain}
+                onChange={(e) => setSenderDomain(e.target.value)}
+                disabled={!!file}
+                placeholder="example.com"
+              />
+            </label>
+
+            <label className="field">
+              <span>Email body</span>
+              <textarea
+                value={emailText}
+                onChange={(e) => setEmailText(e.target.value)}
+                disabled={!!file}
+                rows="10"
+                placeholder="Paste raw email text for direct analysis"
+              />
+            </label>
+
+            {file && (
+              <button className="ghost-button" type="button" onClick={() => setFile(null)}>
+                Clear file
+              </button>
+            )}
+
+            <button className="primary-button" type="submit" disabled={loading}>
+              {loading ? 'Analyzing...' : 'Run Analysis'}
+            </button>
+          </form>
+
+          <section className="dashboard">
+            {!results && (
+              <div className="placeholder">
+                <h2>Analyst Console</h2>
+                <p>Run an analysis to view model probability, authentication posture, link intelligence, language lures, and prioritized risk factors.</p>
+              </div>
+            )}
+
+            {results && (
+              <>
+                <section className={`verdict-band ${scoreTone}`}>
+                  <div>
+                    <p className="eyebrow">Verdict</p>
+                    <h2>{score?.verdict?.replace('_', ' ') ?? 'unknown'}</h2>
+                    <p>{results.ai?.explanation ?? 'Analysis completed.'}</p>
+                  </div>
+                  <div className="score-breakdown">
+                    <Metric label="Model probability" value={`${score?.model_probability ?? 0}%`} />
+                    <Metric label="Heuristic points" value={score?.heuristic_points ?? 0} />
+                    <Metric label="Risk factors" value={riskFactors.length} />
+                  </div>
+                </section>
+
+                <section className="metrics-row">
+                  <Metric label="Links" value={links?.total_links ?? 0} />
+                  <Metric label="Suspicious links" value={links?.suspicious_count ?? 0} tone={(links?.suspicious_count ?? 0) ? 'critical' : 'calm'} />
+                  <Metric label="Link domains" value={links?.unique_domains?.length ?? 0} />
+                  <Metric label="Words analyzed" value={language?.word_count ?? 0} />
+                </section>
+
+                <section className="panel-grid">
+                  <div className="panel">
+                    <div className="panel-heading">
+                      <h2>Authentication</h2>
+                      <span>{results.extracted_domain || 'No domain'}</span>
+                    </div>
+                    {dns ? (
+                      <div className="status-stack">
+                        <StatusPill label="MX record" good={dns.mx_found} />
+                        <StatusPill label="SPF record" good={dns.spf_found} />
+                        <StatusPill label="DMARC record" good={dns.dmarc_found} />
+                        <StatusPill label="Message-ID" good={header?.message_id_present} />
+                      </div>
+                    ) : (
+                      <EmptyState text="No sender domain was available for DNS analysis." />
                     )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                  </div>
 
-          {results.dns && (
-            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
-              <h3>Technical Header Verification ({results.domain || senderDomain}):</h3>
-              <p>
-                <strong>MX Records (Can receive mail?):</strong> {results.dns.mx_found ? 'Pass' : 'Fail (Suspicious)'}
-              </p>
-              <p>
-                <strong>SPF Sender Policy:</strong> {results.dns.spf_found ? 'Pass' : 'Fail (No SPF record)'}
-              </p>
-              <p>
-                <strong>DMARC Security Policy:</strong> {results.dns.dmarc_found ? 'Pass' : 'Fail (Unprotected Domain)'}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+                  <div className="panel">
+                    <div className="panel-heading">
+                      <h2>Header Signals</h2>
+                      <span>{header?.received_count ?? 0} hops</span>
+                    </div>
+                    <dl className="kv-list">
+                      <div><dt>From domain</dt><dd>{header?.from_domain || 'manual input'}</dd></div>
+                      <div><dt>Reply-To</dt><dd>{header?.reply_to_domain || 'none'}</dd></div>
+                      <div><dt>Return-Path</dt><dd>{header?.return_path_domain || 'none'}</dd></div>
+                      <div><dt>Subject</dt><dd>{header?.subject || 'not available'}</dd></div>
+                    </dl>
+                  </div>
+                </section>
+
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Prioritized Risk Factors</h2>
+                    <span>{riskFactors.length} findings</span>
+                  </div>
+                  {riskFactors.length ? (
+                    <div className="finding-list">
+                      {riskFactors.map((factor, index) => (
+                        <article className={`finding ${factor.severity}`} key={`${factor.signal}-${index}`}>
+                          <div>
+                            <span className="finding-meta">{factor.category} / {factor.severity}</span>
+                            <h3>{factor.signal}</h3>
+                            <p>{factor.detail}</p>
+                          </div>
+                          <strong>+{factor.points}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState text="No heuristic risk factors were triggered." />
+                  )}
+                </section>
+
+                <section className="panel-grid">
+                  <div className="panel">
+                    <div className="panel-heading">
+                      <h2>URL Intelligence</h2>
+                      <span>{links?.details?.length ?? 0} URLs</span>
+                    </div>
+                    {links?.details?.length ? (
+                      <div className="url-list">
+                        {links.details.map((link, index) => (
+                          <article className={link.is_suspicious ? 'url-item flagged' : 'url-item'} key={`${link.url}-${index}`}>
+                            <strong>{link.host || 'unknown host'}</strong>
+                            <span>{link.url}</span>
+                            <p>{link.reasons?.length ? link.reasons.join(', ') : 'No URL heuristic flags'}</p>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState text="No URLs were found in the message body." />
+                    )}
+                  </div>
+
+                  <div className="panel">
+                    <div className="panel-heading">
+                      <h2>Language Signals</h2>
+                      <span>{language?.keyword_hit_count ?? 0} hits</span>
+                    </div>
+                    {Object.keys(language?.keyword_hits ?? {}).length ? (
+                      <div className="tag-cloud">
+                        {Object.entries(language.keyword_hits).map(([category, hits]) => (
+                          <div className="tag-group" key={category}>
+                            <strong>{category}</strong>
+                            <span>{hits.join(', ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState text="No configured lure-language keywords were matched." />
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
+          </section>
+        </section>
+      </section>
+    </main>
   )
 }
 

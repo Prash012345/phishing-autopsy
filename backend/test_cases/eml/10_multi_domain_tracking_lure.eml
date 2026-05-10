@@ -1,0 +1,16 @@
+MIME-Version: 1.0
+Date: Fri, 08 May 2026 18:40:00 +0530
+Message-ID: <benefits-enrollment@benefits.example.net>
+Subject: Final notice for benefits enrollment
+From: Benefits Enrollment <notify@benefits.example.net>
+To: Employee <employee@company.example>
+Content-Type: text/html; charset="utf-8"
+
+<html>
+  <body>
+    <p>This is the final notice for benefits enrollment. Your account must be verified today to keep access.</p>
+    <p><a href="https://benefits.example.net/notice">Enrollment details</a></p>
+    <p><a href="http://verify-benefits-login.example.org/session">Verify account</a></p>
+    <img src="https://tracking.example-cdn.net/open?id=123" />
+  </body>
+</html>

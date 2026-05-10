@@ -1,0 +1,15 @@
+MIME-Version: 1.0
+Date: Fri, 08 May 2026 19:20:00 +0530
+Message-ID: <build-report-20260508@engineering.company.example>
+Subject: Nightly build report and release checklist
+From: Build System <builds@engineering.company.example>
+To: Engineering Team <eng@company.example>
+Content-Type: text/plain; charset="utf-8"
+
+Hello team,
+
+The nightly build completed successfully. The deployment notes include updated API schema references, test coverage results, and the rollback checklist for Monday's release window.
+
+No action is required unless you own one of the optional cleanup tasks listed in the engineering board.
+
+Build System

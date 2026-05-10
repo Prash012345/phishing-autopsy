@@ -1,0 +1,79 @@
+[
+  {
+    "id": "benign_vendor_update",
+    "file": "eml/01_benign_vendor_update.eml",
+    "expected_verdict": "low_risk",
+    "max_score": 50,
+    "expected_categories": []
+  },
+  {
+    "id": "credential_harvest",
+    "file": "eml/02_credential_harvest.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Links", "Language"]
+  },
+  {
+    "id": "ceo_payment_fraud",
+    "file": "eml/03_ceo_payment_fraud.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Language"]
+  },
+  {
+    "id": "reply_to_mismatch",
+    "file": "eml/04_reply_to_mismatch.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Headers", "Language"]
+  },
+  {
+    "id": "url_shortener_lure",
+    "file": "eml/05_url_shortener_lure.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Links", "Language"]
+  },
+  {
+    "id": "invoice_attachment_lure",
+    "file": "eml/06_invoice_attachment_lure.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Attachments", "Language"]
+  },
+  {
+    "id": "html_brand_impersonation",
+    "file": "eml/07_html_brand_impersonation.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Links", "Language"]
+  },
+  {
+    "id": "benign_newsletter",
+    "file": "eml/08_benign_newsletter.eml",
+    "expected_verdict": "low_risk",
+    "max_score": 60,
+    "expected_categories": []
+  },
+  {
+    "id": "ip_address_login_lure",
+    "file": "eml/09_ip_address_login_lure.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Links", "Language"]
+  },
+  {
+    "id": "multi_domain_tracking_lure",
+    "file": "eml/10_multi_domain_tracking_lure.eml",
+    "expected_verdict": "high_risk",
+    "min_score": 75,
+    "expected_categories": ["Links", "Language"]
+  },
+  {
+    "id": "benign_internal_build_report",
+    "file": "eml/11_benign_internal_build_report.eml",
+    "expected_verdict": "low_risk",
+    "max_score": 60,
+    "expected_categories": []
+  }
+]

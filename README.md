@@ -12,8 +12,9 @@ The project is designed for experimentation and learning around phishing detecti
 - Score email text with a custom TF-IDF + Naive Bayes phishing model.
 - Check sender-domain MX, SPF, and DMARC DNS records.
 - Extract URLs and flag suspicious links based on simple URL heuristics.
+- Produce analyst-oriented evidence including header mismatches, URL intelligence, language lure categories, attachments, risk factors, and score breakdown.
 - Apply an extra heuristic boost for high-risk spear-phishing language such as urgent payment, invoice, transfer, and overdue terms.
-- Display threat score, phishing verdict, AI explanation, and DNS results in a React UI.
+- Display threat score, phishing verdict, authentication posture, link findings, and prioritized risk factors in a React analyst console.
 
 ## Tech Stack
 
@@ -30,11 +31,16 @@ phishing-autopsy/
 +-- backend/
 |   +-- app.py                    # Flask API for email analysis
 |   +-- train_model.py            # Trains and saves the phishing classifier
-|   +-- test_ai.py                # Experimental Gemini API test script
-|   +-- emails.csv                # Training dataset with label,text columns
+|   +-- datasets/                 # Training CSV datasets
 |   +-- phishing_model.pkl        # Saved scikit-learn model
 |   +-- vectorizer.pkl            # Saved TF-IDF vectorizer
 |   +-- test_emails/              # Sample .eml files for manual testing
+|   +-- test_cases/               # Real-world style fixtures and expectations
+|   +-- run_test_cases.py         # Runs fixture checks through the Flask test client
++-- docs/
+|   +-- Phishing_Autopsy_Minor_Project_Report.docx
++-- scripts/
+|   +-- generate_project_report_docx.js
 +-- frontend/
     +-- package.json              # Frontend scripts and dependencies
     +-- vite.config.js            # Vite configuration
@@ -72,7 +78,7 @@ python -m venv .venv
 Install the Python dependencies:
 
 ```powershell
-pip install flask flask-cors dnspython joblib pandas scikit-learn google-genai
+pip install flask flask-cors dnspython joblib pandas scikit-learn
 ```
 
 Start the Flask API:
@@ -127,6 +133,14 @@ Sample emails are available in:
 
 ```text
 backend/test_emails/
+```
+
+The sample set includes safe mail, bank credential phishing, CEO fraud, Reply-To mismatch, URL-shortener lure, HTML brand impersonation, IP-address login lure, and a benign internal build report.
+
+Real-world style regression fixtures are available in:
+
+```text
+backend/test_cases/
 ```
 
 ## API
@@ -187,8 +201,30 @@ Example response:
     "dmarc_found": false
   },
   "extracted_domain": "example.com",
+  "score_breakdown": {
+    "model_probability": 88,
+    "heuristic_points": 24,
+    "final_score": 85,
+    "verdict": "high_risk"
+  },
+  "risk_factors": [
+    {
+      "severity": "high",
+      "category": "Links",
+      "signal": "Suspicious URL pattern",
+      "detail": "1 link(s) matched suspicious URL heuristics.",
+      "points": 8
+    }
+  ],
+  "link_analysis": {
+    "total_links": 1,
+    "suspicious_count": 1,
+    "unique_domains": [
+      "secure-login-example.com"
+    ]
+  },
   "ai_analysis": {
-    "threat_score": 92,
+    "threat_score": 85,
     "is_phishing": true,
     "links": [
       "http://secure-login-example.com/login"
@@ -202,30 +238,60 @@ Example response:
         ]
       }
     ],
-    "explanation": "Our custom NLP model analyzed the linguistic patterns and determined a 92% probability of malicious intent. Found 1 suspicious link(s) based on URL heuristics."
+    "explanation": "Model phishing probability is 88%. Evidence review found 3 risk factor(s), including 1 suspicious link(s)."
   }
 }
 ```
 
 ## Training the Model
 
-The classifier is trained from `backend/emails.csv`, which must contain these columns:
+The classifier is trained from CSV files in `backend/datasets/`. The training script currently looks for:
 
 ```text
-label,text
+emails.csv
+phishing_email.csv
+CEAS_08.csv
+Enron.csv
+Ling.csv
+Nazario.csv
+Nigerian_Fraud.csv
+SpamAssasin.csv
 ```
 
-The current training script uses:
+The script accepts these common dataset shapes:
 
-- `TfidfVectorizer(stop_words='english', max_features=5000)`
-- `MultinomialNB`
-- `train_test_split(test_size=0.2, random_state=42)`
+- `label,text`
+- `text_combined,label`
+- `subject,body,label`
+- `subject,body,urls,label`
+
+Labels are normalized into:
+
+```text
+0 = legitimate / ham / safe
+1 = phishing / spam / scam / malicious
+```
+
+The current training script:
+
+- loads and normalizes all available datasets from `backend/datasets/`
+- combines subject, body, and URL fields when needed
+- removes duplicate email text
+- uses `TfidfVectorizer` with word unigrams and bigrams
+- trains a `ComplementNB` classifier
+- uses a stratified 80/20 train/test split
 
 To retrain the model:
 
 ```powershell
 cd backend
 python train_model.py
+```
+
+`train_modify.py` is also available as a compatibility wrapper and runs the same training pipeline:
+
+```powershell
+python train_modify.py
 ```
 
 This regenerates:
@@ -246,6 +312,44 @@ npm run preview  # Preview the production build
 npm run lint     # Run ESLint
 ```
 
+## Test Cases
+
+The project includes synthetic real-world style `.eml` fixtures for:
+
+- benign operational mail
+- credential harvesting
+- CEO/vendor payment fraud
+- Reply-To mismatch
+- URL shortener lure
+- invoice attachment lure
+- HTML brand impersonation
+- IP-address login lure
+- multi-domain tracking lure
+- benign internal engineering report
+- benign newsletter content
+
+Run them from `backend/`:
+
+```powershell
+python run_test_cases.py
+```
+
+The runner posts each fixture to `/api/analyze` through Flask's test client and validates score ranges, expected verdicts, and expected evidence categories.
+
+## Project Report
+
+A compiled Word report is available at:
+
+```text
+docs/Phishing_Autopsy_Minor_Project_Report.docx
+```
+
+To regenerate it:
+
+```powershell
+node scripts/generate_project_report_docx.js
+```
+
 ## Current Limitations
 
 - Link analysis is heuristic-based. It flags plain HTTP links, URL shorteners, IP-address hosts, punycode domains, and links whose host differs from the claimed sender domain. It does not follow redirects, fetch pages, inspect reputation feeds, or detect every brand impersonation.
@@ -260,6 +364,7 @@ npm run lint     # Run ESLint
 - URL extraction is implemented and suspicious links are returned with human-readable reasons.
 - DNS checks now run independently for MX, SPF, and DMARC, so one missing or failing lookup does not prevent the others from being evaluated.
 - Backend model and dataset paths are resolved relative to `backend/`, reducing path errors when scripts are launched from another working directory.
+- The frontend now presents a technical analyst console with model scoring, heuristic scoring, authentication checks, URL intelligence, language signals, and prioritized findings.
 
 ## Troubleshooting
 

@@ -1,0 +1,14 @@
+MIME-Version: 1.0
+Date: Fri, 08 May 2026 17:05:00 +0530
+Message-ID: <document-share@files.example.org>
+Subject: Shared document expires in 24 hours
+From: Document Share <notify@files.example.org>
+To: Employee <employee@company.example>
+Content-Type: text/plain; charset="utf-8"
+
+A confidential document has been shared with you.
+
+Open the document immediately and authenticate before the access link expires:
+https://bit.ly/3ExampleReview
+
+Document Sharing Service

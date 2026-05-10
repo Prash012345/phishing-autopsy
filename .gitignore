@@ -1,1 +1,5 @@
 backend/emails.csv
+backend/datasets/*.csv
+scripts/*.py
+__pycache__/
+*.pyc

@@ -1,0 +1,16 @@
+MIME-Version: 1.0
+Date: Thu, 07 May 2026 17:40:00 +0530
+Message-ID: <weekly-digest@community.example.org>
+Subject: Weekly engineering community digest
+From: Community Digest <digest@community.example.org>
+To: Subscriber <subscriber@company.example>
+Content-Type: text/plain; charset="utf-8"
+
+Hello,
+
+This week's digest includes notes from the platform engineering meetup, an article about database migrations, and a recording from the observability workshop.
+
+You are receiving this because you subscribed to the engineering community list.
+
+Thanks,
+Community Team
