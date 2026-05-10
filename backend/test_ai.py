@@ -1,7 +1,7 @@
 from google import genai
 
 # 2. Choose the model (Flash is fast and free)
-client = genai.Client(api_key="AIzaSyB0oEti2ggJBWpkPMKfwVzrD99_SbTLakw")
+client = genai.Client(api_key="")
 
 # 3. Create a fake, suspicious email to test
 fake_email = """
