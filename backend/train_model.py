@@ -4,10 +4,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report
 import joblib
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+DATASET_PATH = BASE_DIR / 'emails.csv'
 
 print("1. Loading dataset...")
-# Make sure your CSV has columns named 'text' and 'label'
-df = pd.read_csv('emails.csv') 
+df = pd.read_csv(DATASET_PATH)
 
 # Clean up any missing data
 df.dropna(inplace=True)
@@ -31,7 +34,6 @@ print(f"Accuracy: {accuracy_score(y_test, predictions) * 100:.2f}%")
 print("\nClassification Report:\n", classification_report(y_test, predictions))
 
 print("6. Saving the model to disk...")
-# Save the model and the vectorizer so Flask can use them
-joblib.dump(model, 'phishing_model.pkl')
-joblib.dump(vectorizer, 'vectorizer.pkl')
+joblib.dump(model, BASE_DIR / 'phishing_model.pkl')
+joblib.dump(vectorizer, BASE_DIR / 'vectorizer.pkl')
 print("Done! Custom NLP Engine created.")

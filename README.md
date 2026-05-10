@@ -10,7 +10,8 @@ The project is designed for experimentation and learning around phishing detecti
 - Extract sender domains from email headers.
 - Parse plain-text and HTML email bodies.
 - Score email text with a custom TF-IDF + Naive Bayes phishing model.
-- Check sender-domain MX and DMARC DNS records.
+- Check sender-domain MX, SPF, and DMARC DNS records.
+- Extract URLs and flag suspicious links based on simple URL heuristics.
 - Apply an extra heuristic boost for high-risk spear-phishing language such as urgent payment, invoice, transfer, and overdue terms.
 - Display threat score, phishing verdict, AI explanation, and DNS results in a React UI.
 
@@ -151,7 +152,16 @@ curl.exe -X POST http://127.0.0.1:5000/api/analyze -F "file=@backend/test_emails
 
 ### Analyze text directly
 
-The backend also accepts JSON for direct text analysis:
+The backend accepts either form fields or JSON for direct text analysis. The React frontend uses form fields.
+
+Form fields:
+
+```text
+email_text=Urgent payment transfer required today...
+sender_domain=example.com
+```
+
+JSON request:
 
 ```http
 POST /api/analyze
@@ -173,14 +183,26 @@ Example response:
 {
   "dns_analysis": {
     "mx_found": true,
+    "spf_found": true,
     "dmarc_found": false
   },
   "extracted_domain": "example.com",
   "ai_analysis": {
     "threat_score": 92,
     "is_phishing": true,
-    "suspicious_links": [],
-    "explanation": "Our custom NLP model analyzed the linguistic patterns and determined a 92% probability of malicious intent."
+    "links": [
+      "http://secure-login-example.com/login"
+    ],
+    "suspicious_links": [
+      {
+        "url": "http://secure-login-example.com/login",
+        "reasons": [
+          "plain HTTP",
+          "domain differs from sender"
+        ]
+      }
+    ],
+    "explanation": "Our custom NLP model analyzed the linguistic patterns and determined a 92% probability of malicious intent. Found 1 suspicious link(s) based on URL heuristics."
   }
 }
 ```
@@ -226,17 +248,24 @@ npm run lint     # Run ESLint
 
 ## Current Limitations
 
-- Link extraction is not implemented yet; `suspicious_links` is currently returned as an empty list.
-- DNS analysis only checks MX and DMARC records.
+- Link analysis is heuristic-based. It flags plain HTTP links, URL shorteners, IP-address hosts, punycode domains, and links whose host differs from the claimed sender domain. It does not follow redirects, fetch pages, inspect reputation feeds, or detect every brand impersonation.
+- DNS analysis checks MX, SPF, and DMARC record presence only. It does not validate DKIM signatures, SPF alignment, DMARC policy strength, or full email authentication results from received headers.
 - The model is only as reliable as the dataset in `emails.csv`.
 - The threat score combines model probability with a small rules-based heuristic, so it should be treated as a decision-support signal rather than a final verdict.
 - The app is configured for local development and does not include production authentication, rate limiting, logging, or deployment configuration.
 
+## Resolved Limitations
+
+- Manual text analysis from the frontend now works with the backend because the API accepts form fields as well as JSON.
+- URL extraction is implemented and suspicious links are returned with human-readable reasons.
+- DNS checks now run independently for MX, SPF, and DMARC, so one missing or failing lookup does not prevent the others from being evaluated.
+- Backend model and dataset paths are resolved relative to `backend/`, reducing path errors when scripts are launched from another working directory.
+
 ## Troubleshooting
 
-### `FileNotFoundError` for `phishing_model.pkl` or `vectorizer.pkl`
+### `FileNotFoundError` for `phishing_model.pkl`, `vectorizer.pkl`, or `emails.csv`
 
-Run the backend from inside the `backend/` directory, or retrain the model:
+Confirm the files exist in `backend/`. To regenerate the model artifacts from the dataset:
 
 ```powershell
 cd backend
@@ -253,7 +282,7 @@ http://127.0.0.1:5000
 
 ### DNS results are missing or false
 
-The sender domain may be empty, invalid, unreachable, or missing MX/DMARC records. DNS failures are caught by the backend and returned as failed checks.
+The sender domain may be empty, invalid, unreachable, or missing MX, SPF, or DMARC records. DNS failures are caught by the backend and returned as failed checks.
 
 ## Disclaimer
 
