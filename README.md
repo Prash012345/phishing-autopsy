@@ -232,13 +232,6 @@ npm run lint     # Run ESLint
 - The threat score combines model probability with a small rules-based heuristic, so it should be treated as a decision-support signal rather than a final verdict.
 - The app is configured for local development and does not include production authentication, rate limiting, logging, or deployment configuration.
 
-## Security Notes
-
-- Do not commit real API keys, secrets, private emails, or customer data.
-- `backend/test_ai.py` is an experimental Gemini API script. If it contains a real API key, rotate that key and move future secrets into environment variables.
-- Treat uploaded email files as untrusted input.
-- Run this project in a controlled local environment when analyzing suspicious samples.
-
 ## Troubleshooting
 
 ### `FileNotFoundError` for `phishing_model.pkl` or `vectorizer.pkl`
